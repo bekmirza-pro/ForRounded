@@ -1,15 +1,24 @@
-const { Admin, Category } = require('../models/models')
+const { Admin } = require('../models/models')
 const ApiError = require('../error/ApiError');
-
+const { hashPassword } = require("../../lib/bcrypt");
 class adminController {
     async create(req, res, next) {
         try {
-            const { username, role } = req.body
-            const admin = await Admin.create({ username, role })
+            const { username, password } = req.body;
 
-            return res.json(admin)
+            if (!password || !username)
+                return res.status(400).json({ message: "BAD_REQUEST!" });
+
+            const hashedPassword = await hashPassword(password);
+
+            const admin = await Admin.create({
+                username,
+                password: hashedPassword
+            });
+
+            return res.json(admin);
         } catch (e) {
-            next(ApiError.badRequest(e.message))
+            next(ApiError.badRequest(e.message));
         }
     }
 
@@ -29,23 +38,31 @@ class adminController {
     }
 
     async getAll(req, res) {
-        const admins = await Admin.findAll({
-            order: [
-                ['id', 'DESC'],
-            ]
-        })
-        return res.json(admins)
+        try {
+            const admins = await Admin.findAll({
+                order: [
+                    ['id', 'DESC'],
+                ]
+            })
+            return res.json(admins)
+        } catch (e) {
+            next(ApiError.badRequest(e.message))
+        }
     }
 
     async getOne(req, res) {
-        const { id } = req.params
+        try {
+            const { id } = req.params
 
-        const admins = await Admin.findOne({
-            where: {
-                id
-            }
-        })
-        return res.json(admins)
+            const admins = await Admin.findOne({
+                where: {
+                    id
+                }
+            })
+            return res.json(admins)
+        } catch (e) {
+            next(ApiError.badRequest(e.message))
+        }
     }
 
 }
